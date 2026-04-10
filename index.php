@@ -1,15 +1,29 @@
 <?php
 session_start();
 
-// Validar qué página cargar (por defecto 'inicio')
-$pagina = isset($_GET['p']) ? $_GET['p'] : 'inicio';
-$paginas_validas = ['inicio', 'nosotros', 'servicios', 'contacto', 'login'];
+// 1. SANEAMIENTO (Arregla el Input Validation de $_GET)
+$pagina_solicitada = isset($_GET['p']) ? htmlspecialchars(trim($_GET['p']), ENT_QUOTES, 'UTF-8') : 'inicio';
 
-if (!in_array($pagina, $paginas_validas)) {
+// 2. MAPEO ESTRICTO (Arregla la alerta crítica de File Inclusion LFI)
+// Solo estos archivos exactos pueden ser incluidos.
+$rutas_seguras = [
+    'inicio' => 'vistas/inicio.php',
+    'nosotros' => 'vistas/nosotros.php',
+    'servicios' => 'vistas/servicios.php',
+    'contacto' => 'vistas/contacto.php',
+    'login' => 'vistas/login.php'
+];
+
+// 3. VALIDACIÓN
+if (array_key_exists($pagina_solicitada, $rutas_seguras)) {
+    $pagina = $pagina_solicitada;
+    $archivo_a_incluir = $rutas_seguras[$pagina_solicitada];
+} else {
     $pagina = 'inicio';
+    $archivo_a_incluir = 'vistas/inicio.php';
 }
 
-// Verificar si hay sesión activa
+// Variables de sesión seguras
 $usuario_logueado = isset($_SESSION['usuario']) ? $_SESSION['usuario'] : null;
 $rol_usuario = isset($_SESSION['rol']) ? $_SESSION['rol'] : null;
 ?>
@@ -17,8 +31,8 @@ $rol_usuario = isset($_SESSION['rol']) ? $_SESSION['rol'] : null;
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Hosanna - <?php echo ucfirst($pagina); ?></title>
-    <link rel="stylesheet" href="css/style.css?v=4">
+    <title>Hosanna - <?php echo htmlspecialchars(ucfirst($pagina), ENT_QUOTES, 'UTF-8'); ?></title>
+    <link rel="stylesheet" href="css/style.css?v=7">
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
@@ -31,8 +45,8 @@ $rol_usuario = isset($_SESSION['rol']) ? $_SESSION['rol'] : null;
             <a href="index.php?p=contacto" data-i18n="nav_contacto">Contacto</a>
             
             <div id="nav-auth">
-                <?php if ($usuario_logueado): ?>
-                    <span style="color:var(--accent); font-weight:bold; margin-right:10px;">👤 <?php echo htmlspecialchars($usuario_logueado); ?> (<?php echo htmlspecialchars($rol_usuario); ?>)</span>
+                <?php if ($usuario_logueado !== null): ?>
+                    <span style="color:var(--accent); font-weight:bold; margin-right:10px;">👤 <?php echo htmlspecialchars($usuario_logueado, ENT_QUOTES, 'UTF-8'); ?> (<?php echo htmlspecialchars($rol_usuario, ENT_QUOTES, 'UTF-8'); ?>)</span>
                     <a href="#" onclick="Controlador.cerrarSesion(event)" style="color: #ff6b6b; font-weight: bold;" data-i18n="nav_logout">Cerrar sesión</a>
                 <?php else: ?>
                     <a href="index.php?p=login" data-i18n="nav_login">Ingresar</a>
@@ -48,15 +62,15 @@ $rol_usuario = isset($_SESSION['rol']) ? $_SESSION['rol'] : null;
     </header>
 
     <div class="breadcrumbs-bar" id="breadcrumbs">
-        <a href="index.php?p=inicio">Inicio</a> > <span style="text-transform: capitalize;"><?php echo $pagina; ?></span>
+        <a href="index.php?p=inicio">Inicio</a> > <span style="text-transform: capitalize;"><?php echo htmlspecialchars($pagina, ENT_QUOTES, 'UTF-8'); ?></span>
     </div>
 
     <main>
-        <?php include "vistas/{$pagina}.php"; ?>
+        <?php include $archivo_a_incluir; ?>
     </main>
 
-    <script src="js/modelo.js?v=6"></script>
-    <script src="js/idiomas.js?v=6"></script>
-    <script src="js/controlador.js?v=6"></script>
+    <script src="js/modelo.js?v=7"></script>
+    <script src="js/idiomas.js?v=7"></script>
+    <script src="js/controlador.js?v=7"></script>
 </body>
 </html>
